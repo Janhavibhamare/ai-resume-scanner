@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Resume Scanner</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter&family=Poppins:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to bottom, #f9fbff, #e0e7ff);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .cloud-card {
+      backdrop-filter: blur(10px);
+      background-color: rgba(255, 255, 255, 0.6);
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    .cloud {
+      position: absolute;
+      background: #ffffff;
+      border-radius: 50%;
+      opacity: 0.5;
+      filter: blur(20px);
+      animation: floatClouds linear infinite;
+    }
+    .cloud::before, .cloud::after {
+      content: '';
+      position: absolute;
+      background: #ffffff;
+      border-radius: 50%;
+    }
+    .cloud::before {
+      width: 100px;
+      height: 100px;
+      left: -50px;
+      top: -20px;
+    }
+    .cloud::after {
+      width: 120px;
+      height: 120px;
+      right: -60px;
+      top: -30px;
+    }
+
+    @keyframes floatClouds {
+      0% { transform: translateX(-300px); }
+      100% { transform: translateX(150vw); }
+    }
+  </style>
+</head>
+<body class="relative flex flex-col items-center justify-center px-4 py-10">
+
+  <!-- ☁️ 10 Floating Clouds with different styles -->
+  <div class="cloud" style="top: 40px; width: 200px; height: 60px; animation-duration: 60s; animation-delay: 0s;"></div>
+  <div class="cloud" style="top: 100px; width: 250px; height: 70px; animation-duration: 70s; animation-delay: 5s;"></div>
+  <div class="cloud" style="top: 160px; width: 180px; height: 55px; animation-duration: 65s; animation-delay: 10s;"></div>
+  <div class="cloud" style="top: 220px; width: 220px; height: 65px; animation-duration: 75s; animation-delay: 3s;"></div>
+  <div class="cloud" style="top: 280px; width: 150px; height: 50px; animation-duration: 50s; animation-delay: 8s;"></div>
+  <div class="cloud" style="top: 340px; width: 260px; height: 70px; animation-duration: 80s; animation-delay: 2s;"></div>
+  <div class="cloud" style="top: 400px; width: 170px; height: 55px; animation-duration: 66s; animation-delay: 7s;"></div>
+  <div class="cloud" style="top: 460px; width: 240px; height: 68px; animation-duration: 74s; animation-delay: 4s;"></div>
+  <div class="cloud" style="top: 520px; width: 200px; height: 60px; animation-duration: 59s; animation-delay: 6s;"></div>
+  <div class="cloud" style="top: 580px; width: 230px; height: 65px; animation-duration: 73s; animation-delay: 1s;"></div>
+
+  <!-- Heading -->
+  <div class="text-center mb-10 z-10">
+    <h1 class="text-4xl font-bold text-blue-700 mb-2">AI Resume Scanner ☁️</h1>
+    <p class="text-gray-600 text-lg">Match resumes to job descriptions effortlessly</p>
+  </div>
+
+  <!-- Upload Form -->
+  <div class="w-full max-w-2xl p-8 cloud-card z-10">
+    <form id="resumeForm" class="space-y-4">
+      <div>
+        <label class="block text-lg font-medium text-gray-700 mb-1">Upload Resume (PDF)</label>
+        <input type="file" id="resume" name="resume" accept=".pdf" class="w-full border p-2 rounded-lg" required />
+      </div>
+      <div>
+        <label class="block text-lg font-medium text-gray-700 mb-1">Paste Job Description</label>
+        <textarea id="jobDescription" name="job_description" rows="4" class="w-full border p-2 rounded-lg" placeholder="Job responsibilities, skills, etc..."></textarea>
+      </div>
+      <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
+        Submit
+      </button>
+    </form>
+  </div>
+
+  <!-- Results Section -->
+  <div id="result" class="mt-10 max-w-2xl w-full p-6 cloud-card hidden z-10">
+    <h2 class="text-3xl font-bold text-indigo-600 mb-4 text-center" id="displayName"></h2>
+    <p class="text-lg text-gray-800 text-center"><strong>Match Score:</strong> <span id="matchScore"></span>%</p>
+    <p class="text-lg text-gray-800 mt-4"><strong>Skills Found:</strong></p>
+    <ul id="skillsList" class="list-disc pl-6 text-gray-700"></ul>
+  </div>
+
+  <!-- JS Logic -->
+  <script>
+    const form = document.getElementById("resumeForm");
+    const resultBox = document.getElementById("result");
+    const displayName = document.getElementById("displayName");
+    const matchScore = document.getElementById("matchScore");
+    const skillsList = document.getElementById("skillsList");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData();
+      const resume = document.getElementById("resume").files[0];
+      const jobDescription = document.getElementById("jobDescription").value;
+
+      formData.append("resume", resume);
+      formData.append("job_description", jobDescription);
+
+      try {
+        const res = await fetch("http://localhost:5000/scan", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        displayName.textContent = data.name || "Unknown";
+        matchScore.textContent = data.match_score;
+
+        skillsList.innerHTML = "";
+
+        if (data.skills_found.length === 0 || data.match_score === 0) {
+          const li = document.createElement("li");
+          li.textContent = "Skills not found";
+          skillsList.appendChild(li);
+        } else {
+          data.skills_found.forEach(skill => {
+            const li = document.createElement("li");
+            li.textContent = skill;
+            skillsList.appendChild(li);
+          });
+        }
+
+        resultBox.classList.remove("hidden");
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      } catch (err) {
+        alert("Something went wrong. Please try again.");
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
